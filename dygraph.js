@@ -790,8 +790,11 @@ Dygraph.prototype.xAxisExtremes = function() {
   if (this.numRows() === 0) {
     return [0 - pad, 1 + pad];
   }
-  var left = this.rawData_[0][0];
-  var right = this.rawData_[this.rawData_.length - 1][0];
+
+  var xBoundaries = this.attr_('xBoundaries');
+  var left = xBoundaries && xBoundaries[0] || this.rawData_[0][0];
+  var right = xBoundaries && xBoundaries[1] || this.rawData_[this.rawData_.length - 1][0];
+
   if (pad) {
     // Must keep this in sync with dygraph-layout _evaluateLimits()
     var range = right - left;
@@ -1669,8 +1672,9 @@ Dygraph.prototype.resetZoom = function() {
     this.zoomed_x_ = false;
     this.zoomed_y_ = false;
 
-    var minDate = this.rawData_[0][0];
-    var maxDate = this.rawData_[this.rawData_.length - 1][0];
+    var xExtremes = this.xAxisExtremes();
+    var minDate = xExtremes[0];
+    var maxDate = xExtremes[1];
 
     // With only one frame, don't bother calculating extreme ranges.
     // TODO(danvk): merge this block w/ the code below.
