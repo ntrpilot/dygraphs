@@ -1840,7 +1840,10 @@ Dygraph.prototype.findClosestRow = function(domX) {
 /**
  * Given canvas X,Y coordinates, find the closest point.
  *
- * This finds the individual data point across all visible series
+ * When data point is an ellipses, we find the ellipse that
+ * contains the supplied DOM X and Y co-ordinates.
+ *
+ * Otherwise, we find the individual data point across all visible series
  * that's closest to the supplied DOM coordinates using the standard
  * Euclidean X,Y distance.
  *
@@ -1850,30 +1853,63 @@ Dygraph.prototype.findClosestRow = function(domX) {
  * @private
  */
 Dygraph.prototype.findClosestPoint = function(domX, domY) {
-  var minDist = Infinity;
-  var dist, dx, dy, point, closestPoint, closestSeries, closestRow;
-  for ( var setIdx = this.layout_.points.length - 1 ; setIdx >= 0 ; --setIdx ) {
-    var points = this.layout_.points[setIdx];
-    for (var i = 0; i < points.length; ++i) {
-      point = points[i];
-      if (!Dygraph.isValidPoint(point)) continue;
-      dx = point.canvasx - domX;
-      dy = point.canvasy - domY;
-      dist = dx * dx + dy * dy;
-      if (dist < minDist) {
-        minDist = dist;
-        closestPoint = point;
-        closestSeries = setIdx;
-        closestRow = point.idx;
+    var minDist = Infinity;
+    var pointNearnessThresold = Math.pow(15, 2);
+    var dist, dx, dy, point, closestPoint, closestSeries, closestRow, pointOptions, isEllipse;
+
+    for ( var setIdx = this.layout_.points.length - 1 ; setIdx >= 0 ; --setIdx ) {
+      var points = this.layout_.points[setIdx];
+      for (var i = 0; i < points.length; ++i) {
+        point = points[i];
+        if (!Dygraph.isValidPoint(point)) continue;
+
+        dx = domX - point.canvasx;
+        dy = domY - point.canvasy;
+
+        pointOptions = this.rawData_[point.idx][2];
+      
+        isEllipse = pointOptions && (pointOptions.yRange || pointOptions.xRange);
+
+        if (isEllipse) {
+          var xRadius = pointOptions.xRange
+            ? this.toDomXCoord(pointOptions.xRange.maximum) - point.canvasx
+            : this.attrs_.pointSize;
+
+          var yRadius = pointOptions.yRange
+            ? point.canvasy - this.toDomYCoord(pointOptions.yRange.maximum)
+            : this.attrs_.pointSize;
+
+          var isInsideEllipse = ((dx * dx) / (xRadius * xRadius)) + ((dy * dy) / (yRadius * yRadius)) <= 1;
+
+          if (isInsideEllipse) {
+            closestPoint = point;
+            closestSeries = setIdx;
+            closestRow = point.idx;
+          }
+        }
+        else {
+          dist = dx * dx + dy * dy;
+
+          if (dist < minDist) {
+            minDist = dist;
+
+            if (dist < pointNearnessThresold) {
+              closestPoint = point;
+              closestSeries = setIdx;
+              closestRow = point.idx;
+            }
+          }
+        }
       }
     }
-  }
-  var name = this.layout_.setNames[closestSeries];
-  return {
-    row: closestRow,
-    seriesName: name,
-    point: closestPoint
-  };
+
+    var name = this.layout_.setNames[closestSeries];
+
+    return {
+      row: closestRow,
+      seriesName: name,
+      point: closestPoint
+    };
 };
 
 /**
