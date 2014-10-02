@@ -48,7 +48,7 @@ Dygraph.Interaction.startPan = function(event, g, context) {
   }
   context.xUnitsPerPixel = context.dateRange / (g.plotter_.area.w - 1);
 
-  if (g.getNumericOption("panEdgeFraction")) {
+  if (g.getNumericOption("panEdgeFraction") != null) {
     var maxXPixelsToDraw = g.width_ * g.getNumericOption("panEdgeFraction");
     var xExtremes = g.xAxisExtremes(); // I REALLY WANT TO CALL THIS xTremes!
 
