@@ -1856,6 +1856,10 @@ Dygraph.prototype.findClosestPoint = function(domX, domY) {
     var minDist = Infinity;
     var pointNearnessThresold = Math.pow(15, 2);
     var dist, dx, dy, point, closestPoint, closestSeries, closestRow, pointOptions, isEllipse;
+    var that = this;
+    var pointSize = this.attrs_.pointSize;
+    var isRangeValid = function(range) { return range != null && range.minimum != null && range.maximum != null; }
+    var isRangeSizeValid = function(range) { return range != null && Math.abs(range[0] - range[1]) >= pointSize; }
 
     for ( var setIdx = this.layout_.points.length - 1 ; setIdx >= 0 ; --setIdx ) {
       var points = this.layout_.points[setIdx];
@@ -1868,16 +1872,14 @@ Dygraph.prototype.findClosestPoint = function(domX, domY) {
 
         pointOptions = this.rawData_[point.idx][2];
       
-        isEllipse = pointOptions && (pointOptions.yRange || pointOptions.xRange);
+        isEllipse = pointOptions && (isRangeValid(pointOptions.xRange) || isRangeValid(pointOptions.yRange));
 
         if (isEllipse) {
-          var xRadius = pointOptions.xRange
-            ? this.toDomXCoord(pointOptions.xRange.maximum) - point.canvasx
-            : this.attrs_.pointSize;
+          var isXRangeValid = pointOptions.xRange != null && isRangeSizeValid(pointOptions.xRange.toArray().map(function (x) { return that.toDomXCoord(x); }));
+          var isYRangeValid = pointOptions.yRange != null && isRangeSizeValid(pointOptions.yRange.toArray().map(function (y) { return that.toDomYCoord(y); }));
 
-          var yRadius = pointOptions.yRange
-            ? point.canvasy - this.toDomYCoord(pointOptions.yRange.maximum)
-            : this.attrs_.pointSize;
+          var xRadius = isXRangeValid ? this.toDomXCoord(pointOptions.xRange.maximum) - point.canvasx : pointSize;
+          var yRadius = isYRangeValid ? point.canvasy - this.toDomYCoord(pointOptions.yRange.maximum) : pointSize;
 
           var isInsideEllipse = ((dx * dx) / (xRadius * xRadius)) + ((dy * dy) / (yRadius * yRadius)) <= 1;
 
