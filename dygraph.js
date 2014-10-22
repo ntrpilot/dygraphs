@@ -791,7 +791,7 @@ Dygraph.prototype.xAxisExtremes = function() {
     return [0 - pad, 1 + pad];
   }
 
-  var xBoundaries = this.attr_('xBoundaries');
+  var xBoundaries = this.attr_('xBoundaries') || this.dataHandler_.getExtremeXValues(this.rawData_, this.attributes_);
   var left = xBoundaries && xBoundaries[0] || this.rawData_[0][0];
   var right = xBoundaries && xBoundaries[1] || this.rawData_[this.rawData_.length - 1][0];
 
