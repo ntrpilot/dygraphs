@@ -1064,7 +1064,9 @@ Dygraph.prototype.toPercentXCoord = function(x) {
  */
 Dygraph.prototype.numColumns = function() {
   if (!this.rawData_) return 0;
-  return this.rawData_[0] ? this.rawData_[0].length : this.attr_("labels").length;
+
+  var isRawDataA2DArray = this.rawData_[0] && this.rawData_[0].length != null;
+  return isRawDataA2DArray ? this.rawData_[0].length : this.attr_("labels").length;
 };
 
 /**
@@ -3207,7 +3209,8 @@ Dygraph.prototype.parseArray_ = function(data) {
     this.attributes_.reparseSeries();
   } else {
     var num_labels = this.attr_("labels");
-    if (num_labels.length != data[0].length) {
+    var isRawDataA2DArray = data[0].length;
+    if (isRawDataA2DArray && data[0].length != num_labels.length) {
       Dygraph.error("Mismatch between number of labels (" + num_labels + ")" +
                     " and number of columns in array (" + data[0].length + ")");
       return null;
