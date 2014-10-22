@@ -853,13 +853,14 @@ Dygraph.prototype.toDomCoords = function(x, y, axis) {
  * Returns a single value or null if x is null.
  */
 Dygraph.prototype.toDomXCoord = function(x) {
-  if (x === null) {
+  var pct = this.toPercentXCoord(x);
+
+  if (pct === null) {
     return null;
   }
 
   var area = this.plotter_.area;
-  var xRange = this.xAxisRange();
-  return area.x + (x - xRange[0]) / (xRange[1] - xRange[0]) * area.w;
+  return area.x + pct * area.w;
 };
 
 /**
