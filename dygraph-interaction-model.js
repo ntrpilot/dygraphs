@@ -38,41 +38,40 @@ Dygraph.Interaction.startPan = function(event, g, context) {
   var i, axis;
   context.isPanning = true;
   var xRange = g.xAxisRange();
+  var isXLog = g.getOptionForAxis("logscale", "x");
+  var small = Number.parseFloat("1e-323"); // todo: is this the smallest possible 64-bit positive number
 
-  if (g.getOptionForAxis("logscale", "x")) {
-    context.initialLeftmostDate = Dygraph.log10(xRange[0]);
-    context.dateRange = Dygraph.log10(xRange[1]) - Dygraph.log10(xRange[0]);
-  } else {
-    context.initialLeftmostDate = xRange[0];    
-    context.dateRange = xRange[1] - xRange[0];
-  }
-  context.xUnitsPerPixel = context.dateRange / (g.plotter_.area.w - 1);
+  context.initialLeftmostDate = xRange[0];    
 
   if (g.getNumericOption("panEdgeFraction") != null) {
     var maxXPixelsToDraw = g.width_ * g.getNumericOption("panEdgeFraction");
     var xExtremes = g.xAxisExtremes(); // I REALLY WANT TO CALL THIS xTremes!
 
     var boundedLeftX = g.toDomXCoord(xExtremes[0]) - maxXPixelsToDraw;
+    //boundedLeftX = isXLog && boundedLeftX === Number.NEGATIVE_INFINITY ? g.toDomXCoord(small) : boundedLeftX;
     var boundedRightX = g.toDomXCoord(xExtremes[1]) + maxXPixelsToDraw;
+    context.boundedXCoords = [boundedLeftX, boundedRightX];
 
     var boundedLeftDate = g.toDataXCoord(boundedLeftX);
+    boundedLeftDate = isXLog && isNaN(boundedLeftDate) ? small : boundedLeftDate;
     var boundedRightDate = g.toDataXCoord(boundedRightX);
     context.boundedDates = [boundedLeftDate, boundedRightDate];
 
     var boundedValues = [];
     var maxYPixelsToDraw = g.height_ * g.getNumericOption("panEdgeFraction");
-
+  
     for (i = 0; i < g.axes_.length; i++) {
       axis = g.axes_[i];
+      var isYLog = g.attributes_.getForAxis("logscale", i);
       var yExtremes = axis.valueRange;
+  
+      var boundedLowY = g.toDomYCoord(yExtremes[0], i) + maxYPixelsToDraw;
+      var boundedHighY = g.toDomYCoord(yExtremes[1], i) - maxYPixelsToDraw;
 
-      var boundedTopY = g.toDomYCoord(yExtremes[0], i) + maxYPixelsToDraw;
-      var boundedBottomY = g.toDomYCoord(yExtremes[1], i) - maxYPixelsToDraw;
-
-      var boundedTopValue = g.toDataYCoord(boundedTopY, i);
-      var boundedBottomValue = g.toDataYCoord(boundedBottomY, i);
-
-      boundedValues[i] = [boundedTopValue, boundedBottomValue];
+      var boundedLowValue = isYLog && isNaN(boundedLowY) ? small : g.toDataYCoord(boundedLowY, i);
+      var boundedHighValue = g.toDataYCoord(boundedHighY, i);
+  
+      boundedValues[i] = [boundedLowValue, boundedHighValue];
     }
     context.boundedValues = boundedValues;
   }
@@ -89,18 +88,9 @@ Dygraph.Interaction.startPan = function(event, g, context) {
     var axis_data = {};
     var yRange = g.yAxisRange(i);
     // TODO(konigsberg): These values should be in |context|.
-    // In log scale, initialTopValue, dragValueRange and unitsPerPixel are log scale.
-    var logscale = g.attributes_.getForAxis("logscale", i);
-    if (logscale) {
-      axis_data.initialTopValue = Dygraph.log10(yRange[1]);
-      axis_data.dragValueRange = Dygraph.log10(yRange[1]) - Dygraph.log10(yRange[0]);
-    } else {
-      axis_data.initialTopValue = yRange[1];
-      axis_data.dragValueRange = yRange[1] - yRange[0];
-    }
-    axis_data.unitsPerPixel = axis_data.dragValueRange / (g.plotter_.area.h - 1);
+    axis_data.initialHighValue = yRange[1];
     context.axes.push(axis_data);
-
+ 
     // While calculating axes, set 2dpan.
     if (axis.valueWindow || axis.valueRange) context.is2DPan = true;
   }
@@ -124,59 +114,63 @@ Dygraph.Interaction.movePan = function(event, g, context) {
   context.dragEndX = Dygraph.dragGetX_(event, context);
   context.dragEndY = Dygraph.dragGetY_(event, context);
 
-  var minDate = context.initialLeftmostDate -
-    (context.dragEndX - context.dragStartX) * context.xUnitsPerPixel;
-  if (context.boundedDates) {
-    minDate = Math.max(minDate, context.boundedDates[0]);
+  var leftMostDom = g.toDomXCoord(context.initialLeftmostDate);
+  var minDom = leftMostDom - (context.dragEndX - context.dragStartX);
+
+  var maxDom = minDom + g.plotter_.area.w;
+
+  var minDate = g.toDataXCoord(minDom);
+  var maxDate = g.toDataXCoord(maxDom);
+
+  // prevent pan from exceeding boundary
+  if (context.boundedDates && minDate < context.boundedDates[0]) {
+      minDate = context.boundedDates[0];
+      minDom = g.toDomXCoord(minDate);
+      maxDom = minDom + g.plotter_.area.w;
+      maxDate = g.toDataXCoord(maxDom);
   }
-  var maxDate = minDate + context.dateRange;
-  if (context.boundedDates) {
-    if (maxDate > context.boundedDates[1]) {
-      // Adjust minDate, and recompute maxDate.
-      minDate = minDate - (maxDate - context.boundedDates[1]);
-      maxDate = minDate + context.dateRange;
-    }
+  else if (context.boundedDates && maxDate > context.boundedDates[1]) {
+      maxDate = context.boundedDates[1];
+      maxDom = g.toDomXCoord(maxDate);
+      minDom = maxDom - g.plotter_.area.w;
+      minDate = g.toDataXCoord(minDom);
   }
 
-  if (g.getOptionForAxis("logscale", "x")) {
-    g.dateWindow_ = [ Math.pow(Dygraph.LOG_SCALE, minDate),
-                      Math.pow(Dygraph.LOG_SCALE, maxDate) ];
-  } else {
-    g.dateWindow_ = [minDate, maxDate];    
-  }
+  g.dateWindow_ = [minDate, maxDate];
 
   // y-axis scaling is automatic unless this is a full 2D pan.
   if (context.is2DPan) {
-
+ 
     var pixelsDragged = context.dragEndY - context.dragStartY;
-
+ 
     // Adjust each axis appropriately.
     for (var i = 0; i < g.axes_.length; i++) {
       var axis = g.axes_[i];
       var axis_data = context.axes[i];
-      var unitsDragged = pixelsDragged * axis_data.unitsPerPixel;
 
-      var boundedValue = context.boundedValues ? context.boundedValues[i] : null;
+      var maxDomY = g.toDomYCoord(axis_data.initialHighValue) - pixelsDragged;
+      var minDomY = maxDomY + g.plotter_.area.h;
 
-      // In log scale, maxValue and minValue are the logs of those values.
-      var maxValue = axis_data.initialTopValue + unitsDragged;
-      if (boundedValue) {
-        maxValue = Math.min(maxValue, boundedValue[1]);
+      var minValue = g.toDataYCoord(minDomY);
+      var maxValue = g.toDataYCoord(maxDomY);
+
+      var bounds = context.boundedValues && context.boundedValues[i];
+
+      // prevent pan from exceeding boundary
+      if (bounds && minValue < bounds[0]) {
+          minValue = bounds[0];
+          minDomY = g.toDomYCoord(minValue);
+          maxDomY = minDomY - g.plotter_.area.h;
+          maxValue = g.toDataYCoord(maxDomY);
       }
-      var minValue = maxValue - axis_data.dragValueRange;
-      if (boundedValue) {
-        if (minValue < boundedValue[0]) {
-          // Adjust maxValue, and recompute minValue.
-          maxValue = maxValue - (minValue - boundedValue[0]);
-          minValue = maxValue - axis_data.dragValueRange;
-        }
+      else if (bounds && maxValue > bounds[1]) {
+          maxValue = bounds[1];
+          maxDomY = g.toDomYCoord(maxValue);
+          minDomY = maxDomY + g.plotter_.area.h;
+          minValue = g.toDataYCoord(minDomY);
       }
-      if (g.attributes_.getForAxis("logscale", i)) {
-        axis.valueWindow = [ Math.pow(Dygraph.LOG_SCALE, minValue),
-                             Math.pow(Dygraph.LOG_SCALE, maxValue) ];
-      } else {
-        axis.valueWindow = [ minValue, maxValue ];
-      }
+
+      axis.valueWindow = [ minValue, maxValue ];
     }
   }
 
