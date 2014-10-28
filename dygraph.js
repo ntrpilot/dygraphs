@@ -1858,10 +1858,10 @@ Dygraph.prototype.findClosestRow = function(domX) {
 Dygraph.prototype.findClosestPoint = function(domX, domY) {
     var minDist = Infinity;
     var pointNearnessThresold = Math.pow(15, 2);
-    var dist, dx, dy, point, closestPoint, closestSeries, closestRow, pointOptions, isEllipse;
+    var dist, dx, dy, point, closestPoint, closestSeries, closestRow, xyPoint, isEllipse;
     var that = this;
     var pointSize = this.attrs_.pointSize;
-    var isRangeValid = function(range) { return range != null && range.minimum != null && range.maximum != null; }
+    var isRangeValid = function(range) { return range != null && range.length > 1; }
     var isRangeSizeValid = function(range) { return range != null && Math.abs(range[0] - range[1]) >= pointSize; }
 
     for ( var setIdx = this.layout_.points.length - 1 ; setIdx >= 0 ; --setIdx ) {
@@ -1873,16 +1873,17 @@ Dygraph.prototype.findClosestPoint = function(domX, domY) {
         dx = domX - point.canvasx;
         dy = domY - point.canvasy;
 
-        pointOptions = this.rawData_[point.idx][2];
+        xyPoint = this.rawData_[point.idx]; // get point from series if possible
       
-        isEllipse = pointOptions && (isRangeValid(pointOptions.xRange) || isRangeValid(pointOptions.yRange));
+        isEllipse = xyPoint && (isRangeValid(xyPoint.xRange) || isRangeValid(xyPoint.yRange));
 
         if (isEllipse) {
-          var isXRangeValid = pointOptions.xRange != null && isRangeSizeValid(pointOptions.xRange.toArray().map(function (x) { return that.toDomXCoord(x); }));
-          var isYRangeValid = pointOptions.yRange != null && isRangeSizeValid(pointOptions.yRange.toArray().map(function (y) { return that.toDomYCoord(y); }));
+          // Optimize: can the range canvas coords be cached in the point like the mid-point coords
+          var isXRangeValid = xyPoint.xRange != null && isRangeSizeValid(xyPoint.xRange.map(function (x) { return that.toDomXCoord(x); }));
+          var isYRangeValid = xyPoint.yRange != null && isRangeSizeValid(xyPoint.yRange.map(function (y) { return that.toDomYCoord(y); }));
 
-          var xRadius = isXRangeValid ? this.toDomXCoord(pointOptions.xRange.maximum) - point.canvasx : pointSize;
-          var yRadius = isYRangeValid ? point.canvasy - this.toDomYCoord(pointOptions.yRange.maximum) : pointSize;
+          var xRadius = isXRangeValid ? this.toDomXCoord(xyPoint.xRange[xyPoint.xRange.length - 1]) - point.canvasx : pointSize;
+          var yRadius = isYRangeValid ? point.canvasy - this.toDomYCoord(xyPoint.yRange[xyPoint.yRange.length - 1]) : pointSize;
 
           var isInsideEllipse = ((dx * dx) / (xRadius * xRadius)) + ((dy * dy) / (yRadius * yRadius)) <= 1;
 
