@@ -41,10 +41,11 @@ Dygraph.Interaction.startPan = function(event, g, context) {
   var isXLog = g.getOptionForAxis("logscale", "x");
   var small = Number.parseFloat("1e-323"); // todo: is this the smallest possible 64-bit positive number
 
-  context.initialLeftmostDate = xRange[0];    
+  context.initialLeftmostDate = xRange[0];
+  var panEdgeFraction = g.getNumericOption("panEdgeFraction");
 
-  if (g.getNumericOption("panEdgeFraction") != null) {
-    var maxXPixelsToDraw = g.width_ * g.getNumericOption("panEdgeFraction");
+  if (panEdgeFraction != null) {
+    var maxXPixelsToDraw = g.width_ * panEdgeFraction;
     var xExtremes = g.xAxisExtremes(); // I REALLY WANT TO CALL THIS xTremes!
 
     var boundedLeftX = g.toDomXCoord(xExtremes[0]) - maxXPixelsToDraw;
@@ -58,7 +59,7 @@ Dygraph.Interaction.startPan = function(event, g, context) {
     context.boundedDates = [boundedLeftDate, boundedRightDate];
 
     var boundedValues = [];
-    var maxYPixelsToDraw = g.height_ * g.getNumericOption("panEdgeFraction");
+    var maxYPixelsToDraw = g.height_ * panEdgeFraction;
   
     for (i = 0; i < g.axes_.length; i++) {
       axis = g.axes_[i];
