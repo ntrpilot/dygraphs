@@ -152,7 +152,9 @@ chart_labels.prototype.layout = function(e) {
     // label, but the default yAxisLabelWidth is large enough that this results
     // in overly-padded charts. The y-axis label should fit fine. If it
     // doesn't, the yAxisLabelWidth option can be increased.
-    var y_rect = e.reserveSpaceLeft(0);
+    // GDL: increasing the yAxisLabelWidth does not result in extra room for the 
+    // y-axis label, so this needs to be allowed for here.
+    var y_rect = e.reserveSpaceLeft(r.getOption("yLabelWidth"));
 
     this.ylabel_div_ = createRotatedDiv(
         g, y_rect,
