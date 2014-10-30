@@ -39,7 +39,7 @@ Dygraph.Interaction.startPan = function(event, g, context) {
   context.isPanning = true;
   var xRange = g.xAxisRange();
   var isXLog = g.getOptionForAxis("logscale", "x");
-  var small = Number.parseFloat("1e-323"); // todo: is this the smallest possible 64-bit positive number
+  var small = parseFloat("1e-323"); // todo: is this the smallest possible 64-bit positive number
 
   context.initialLeftmostDate = xRange[0];
   var panEdgeFraction = g.getNumericOption("panEdgeFraction");
