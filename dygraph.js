@@ -1859,7 +1859,6 @@ Dygraph.prototype.findClosestPoint = function(domX, domY) {
     var minDist = Infinity;
     var pointNearnessThresold = Math.pow(15, 2);
     var dist, dx, dy, point, closestPoint, closestSeries, closestRow, xyPoint, isEllipse;
-    var that = this;
     var pointSize = this.attrs_.pointSize;
     var isRangeValid = function(range) { return range != null && range.length > 1; }
     var isRangeSizeValid = function(range) { return range != null && Math.abs(range[0] - range[1]) >= pointSize; }
@@ -1878,12 +1877,20 @@ Dygraph.prototype.findClosestPoint = function(domX, domY) {
         isEllipse = xyPoint && (isRangeValid(xyPoint.xRange) || isRangeValid(xyPoint.yRange));
 
         if (isEllipse) {
-          // Optimize: can the range canvas coords be cached in the point like the mid-point coords
-          var isXRangeValid = xyPoint.xRange != null && isRangeSizeValid(xyPoint.xRange.map(function (x) { return that.toDomXCoord(x); }));
-          var isYRangeValid = xyPoint.yRange != null && isRangeSizeValid(xyPoint.yRange.map(function (y) { return that.toDomYCoord(y); }));
+          // Optimize: can the range canvas coords be cached in the point, like the mid-point coords
+          var xRangeDom = [ this.toDomXCoord(xyPoint.xRange[0]), this.toDomXCoord(xyPoint.xRange[xyPoint.xRange.length - 1]) ];
+          var yRangeDom = [ this.toDomYCoord(xyPoint.yRange[0]), this.toDomYCoord(xyPoint.yRange[xyPoint.xRange.length - 1]) ];
 
-          var xRadius = isXRangeValid ? this.toDomXCoord(xyPoint.xRange[xyPoint.xRange.length - 1]) - point.canvasx : pointSize;
-          var yRadius = isYRangeValid ? point.canvasy - this.toDomYCoord(xyPoint.yRange[xyPoint.yRange.length - 1]) : pointSize;
+          var isXRangeValid = xyPoint.xRange != null && isRangeSizeValid(xRangeDom);
+          var isYRangeValid = xyPoint.yRange != null && isRangeSizeValid(yRangeDom);
+
+          var xRadius = isXRangeValid
+              ? point.canvasx - xRangeDom[0]
+              : pointSize;
+
+          var yRadius = isYRangeValid
+              ? yRangeDom[0] - point.canvasy
+              : pointSize;
 
           var isInsideEllipse = ((dx * dx) / (xRadius * xRadius)) + ((dy * dy) / (yRadius * yRadius)) <= 1;
 
