@@ -49,7 +49,6 @@ Dygraph.Interaction.startPan = function(event, g, context) {
     var xExtremes = g.xAxisExtremes(); // I REALLY WANT TO CALL THIS xTremes!
 
     var boundedLeftX = g.toDomXCoord(xExtremes[0]) - maxXPixelsToDraw;
-    //boundedLeftX = isXLog && boundedLeftX === Number.NEGATIVE_INFINITY ? g.toDomXCoord(small) : boundedLeftX;
     var boundedRightX = g.toDomXCoord(xExtremes[1]) + maxXPixelsToDraw;
     context.boundedXCoords = [boundedLeftX, boundedRightX];
 
