@@ -275,8 +275,8 @@ axes.prototype.willDrawChart = function(e) {
         label.style.textAlign = "center";
         label.style.top = (y + g.getOption('axisTickSize')) + 'px';
 
-        var left = (x - g.getOption('axisLabelWidth')/2);
-        if (left + g.getOption('axisLabelWidth') > canvasWidth) {
+        var left = (x - g.getOption('xAxisLabelWidth')/2);
+        if (left + g.getOption('xAxisLabelWidth') > canvasWidth) {
           left = canvasWidth - g.getOption('xAxisLabelWidth');
           label.style.textAlign = "right";
         }
