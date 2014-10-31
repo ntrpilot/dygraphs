@@ -154,7 +154,7 @@ chart_labels.prototype.layout = function(e) {
     // doesn't, the yAxisLabelWidth option can be increased.
     // GDL: increasing the yAxisLabelWidth does not result in extra room for the 
     // y-axis label, so this needs to be allowed for here.
-    var y_rect = e.reserveSpaceLeft(r.getOption("yLabelWidth"));
+    var y_rect = e.reserveSpaceLeft(g && g.getOption("yLabelWidth") || 0);
 
     this.ylabel_div_ = createRotatedDiv(
         g, y_rect,
