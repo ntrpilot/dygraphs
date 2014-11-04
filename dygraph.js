@@ -1170,8 +1170,12 @@ Dygraph.prototype.createInterface_ = function() {
 Dygraph.prototype.resizeElements_ = function() {
   this.graphDiv.style.width = this.width_ + "px";
   this.graphDiv.style.height = this.height_ + "px";
+  var isContainerAbsolutePositioned = window.getComputedStyle(this.maindiv_).position === "absolute";
 
-  var canvasScale = Dygraph.getContextPixelRatio(this.canvas_ctx_);
+  var canvasScale = isContainerAbsolutePositioned
+    ? 1
+    : Dygraph.getContextPixelRatio(this.canvas_ctx_);
+
   this.canvas_.width = this.width_ * canvasScale;
   this.canvas_.height = this.height_ * canvasScale;
   this.canvas_.style.width = this.width_ + "px";    // for IE
@@ -1180,7 +1184,10 @@ Dygraph.prototype.resizeElements_ = function() {
     this.canvas_ctx_.scale(canvasScale, canvasScale);
   }
 
-  var hiddenScale = Dygraph.getContextPixelRatio(this.hidden_ctx_);
+  var hiddenScale = isContainerAbsolutePositioned
+    ? 1
+    : Dygraph.getContextPixelRatio(this.hidden_ctx_);
+
   this.hidden_.width = this.width_ * hiddenScale;
   this.hidden_.height = this.height_ * hiddenScale;
   this.hidden_.style.width = this.width_ + "px";    // for IE
