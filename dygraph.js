@@ -1170,9 +1170,11 @@ Dygraph.prototype.createInterface_ = function() {
 Dygraph.prototype.resizeElements_ = function() {
   this.graphDiv.style.width = this.width_ + "px";
   this.graphDiv.style.height = this.height_ + "px";
-  var isContainerAbsolutePositioned = window.getComputedStyle(this.maindiv_).position === "absolute";
+  var mainDivStyle = window.getComputedStyle(this.maindiv_);
 
-  var canvasScale = isContainerAbsolutePositioned
+  var doesContainerResize = mainDivStyle.position === "absolute" || mainDivStyle.flexGrow > 0;
+
+  var canvasScale = doesContainerResize
     ? 1
     : Dygraph.getContextPixelRatio(this.canvas_ctx_);
 
@@ -1184,7 +1186,7 @@ Dygraph.prototype.resizeElements_ = function() {
     this.canvas_ctx_.scale(canvasScale, canvasScale);
   }
 
-  var hiddenScale = isContainerAbsolutePositioned
+  var hiddenScale = doesContainerResize
     ? 1
     : Dygraph.getContextPixelRatio(this.hidden_ctx_);
 
