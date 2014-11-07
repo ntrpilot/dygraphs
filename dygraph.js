@@ -434,6 +434,7 @@ Dygraph.prototype.__init__ = function(div, file, attrs) {
   this.fractions_ = attrs.fractions || false;
   this.dateWindow_ = attrs.dateWindow || null;
 
+  this.disableInteractivePointSelection = false;
   this.annotations_ = [];
 
   // Zoomed indicators - These indicate when the graph has been zoomed and on what axis.
@@ -2002,7 +2003,7 @@ Dygraph.prototype.findStackedPoint = function(domX, domY) {
 Dygraph.prototype.mouseMove_ = function(event) {
   // This prevents JS errors when mousing over the canvas before data loads.
   var points = this.layout_.points;
-  if (points === undefined || points === null) return;
+  if (points == null || this.disableInteractivePointSelection) return;
 
   var canvasCoords = this.eventToDomCoords(event);
   var canvasx = canvasCoords[0];
@@ -2228,7 +2229,7 @@ Dygraph.prototype.mouseOut_ = function(event) {
     this.getFunctionOption("unhighlightCallback")(event);
   }
 
-  if (this.getFunctionOption("hideOverlayOnMouseOut") && !this.lockedSet_) {
+  if (this.getFunctionOption("hideOverlayOnMouseOut") && !this.lockedSet_ && !this.disableInteractivePointSelection) {
     this.clearSelection();
   }
 };
