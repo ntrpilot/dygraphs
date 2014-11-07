@@ -276,7 +276,7 @@ DygraphCanvasRenderer._drawSeries = function(e,
   var nextCanvasY = null;
   var isIsolated; // true if this point is isolated (no line segments)
   var point; // the point being processed in the while loop
-  var pointsOnLine = []; // Array of [canvasx, canvasy] pairs.
+  var pointsOnLine = []; // Array of points to render.
   var first = true; // the first cycle through the while loop
 
   var ctx = e.drawingContext;
@@ -342,7 +342,7 @@ DygraphCanvasRenderer._drawSeries = function(e,
         ctx.moveTo(point.canvasx, point.canvasy);
       }
       if (drawPoints || isIsolated) {
-        pointsOnLine.push([point.canvasx, point.canvasy, point.idx]);
+        pointsOnLine.push(point);
       }
       prevCanvasX = point.canvasx;
       prevCanvasY = point.canvasy;
@@ -364,10 +364,9 @@ DygraphCanvasRenderer._drawPointsOnLine = function(
     e, pointsOnLine, drawPointCallback, color, pointSize) {
   var ctx = e.drawingContext;
   for (var idx = 0; idx < pointsOnLine.length; idx++) {
-    var cb = pointsOnLine[idx];
+    var point = pointsOnLine[idx];
     ctx.save();
-    drawPointCallback(
-        e.dygraph, e.setName, ctx, cb[0], cb[1], color, pointSize, cb[2]);
+    drawPointCallback(e.dygraph, e.setName, ctx, point, color, pointSize);
     ctx.restore();
   }
 };

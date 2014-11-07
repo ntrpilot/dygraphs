@@ -2156,8 +2156,7 @@ Dygraph.prototype.updateSelection_ = function(opt_animFraction) {
       ctx.lineWidth = this.getNumericOption('strokeWidth', pt.name);
       ctx.strokeStyle = color;
       ctx.fillStyle = color;
-      callback(this, pt.name, ctx, canvasx, pt.canvasy,
-          color, circleSize, pt.idx);
+      callback(this, pt.name, ctx, pt, color, circleSize);
     }
     ctx.restore();
 
