@@ -393,8 +393,12 @@ DygraphCanvasRenderer.prototype._updatePoints = function() {
     var points = sets[i];
     for (var j = points.length; j--;) {
       var point = points[j];
-      point.canvasx = this.area.w * point.x + this.area.x;
-      point.canvasy = this.area.h * point.y + this.area.y;
+      var area = this.area;
+
+      point.canvasx = area.w * point.x + area.x;
+      point.canvasy = area.h * point.y + area.y;
+      point.canvasxRange = point.xRange.map(function(val) { return area.w * val + area.x; });
+      point.canvasyRange = point.yRange.map(function(val) { return area.h * val + area.y; });
     }
   }
 };

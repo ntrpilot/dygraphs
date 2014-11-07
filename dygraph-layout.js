@@ -249,9 +249,12 @@ DygraphLayout.prototype._evaluateLineCharts = function() {
 
     for (var j = 0; j < points.length; j++) {
       var point = points[j];
+      var xAxis = this._xAxis;
 
       // Range from 0-1 where 0 represents left and 1 represents right.
-      point.x = DygraphLayout.calcXNormal_(point.xval, this._xAxis, isLogscaleForX);
+      point.x = DygraphLayout.calcXNormal_(point.xval, xAxis, isLogscaleForX);
+      point.xRange = point.xRangeVal.map(function(val) { return DygraphLayout.calcXNormal_(val, xAxis, isLogscaleForX); });
+
       // Range from 0-1 where 0 represents top and 1 represents bottom
       var yval = point.yval;
       if (isStacked) {
@@ -268,6 +271,7 @@ DygraphLayout.prototype._evaluateLineCharts = function() {
         }
       }
       point.y = DygraphLayout.calcYNormal_(axis, yval, logscale);
+      point.yRange = point.yRangeVal.map(function (val) { return DygraphLayout.calcYNormal_(axis, val, logscale); });
     }
 
     this.dygraph_.dataHandler_.onLineEvaluated(points, axis, logscale);
