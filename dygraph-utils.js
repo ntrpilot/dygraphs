@@ -24,7 +24,9 @@ Dygraph.LN_TEN = Math.log(Dygraph.LOG_SCALE);
  * @return {number}
  */
 Dygraph.log10 = function(x) {
-  return Math.log(x) / Dygraph.LN_TEN;
+  return Math.log10
+    ? Math.log10(x)
+    : Math.log(x) / Dygraph.LN_TEN;
 };
 
 // Various logging levels.
