@@ -2003,20 +2003,11 @@ Dygraph.prototype.mouseMove_ = function(event) {
   var canvasx = canvasCoords[0];
   var canvasy = canvasCoords[1];
 
-  var highlightSeriesOpts = this.getOption("highlightSeriesOpts");
-  var selectionChanged = false;
-  if (highlightSeriesOpts && !this.isSeriesLocked()) {
-    var closest;
-    if (this.getBooleanOption("stackedGraph")) {
-      closest = this.findStackedPoint(canvasx, canvasy);
-    } else {
-      closest = this.findClosestPoint(canvasx, canvasy);
-    }
-    selectionChanged = this.setSelection(closest.row, closest.seriesName);
-  } else {
-    var idx = this.findClosestRow(canvasx);
-    selectionChanged = this.setSelection(idx);
-  }
+  var closest = this.getBooleanOption("stackedGraph")
+      ? this.findStackedPoint(canvasx, canvasy)
+      : this.findClosestPoint(canvasx, canvasy);
+
+  var selectionChanged = this.setSelection(closest.row, closest.seriesName);
 
   var callback = this.getFunctionOption("highlightCallback");
   if (callback && selectionChanged) {
