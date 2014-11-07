@@ -37,6 +37,7 @@ Dygraph.Interaction = {};
 Dygraph.Interaction.startPan = function(event, g, context) {
   var i, axis;
   context.isPanning = true;
+  g.disableInteractivePointSelection = true;
   var xRange = g.xAxisRange();
   var isXLog = g.getOptionForAxis("logscale", "x");
   var small = parseFloat("1e-323"); // todo: is this the smallest possible 64-bit positive number
@@ -191,7 +192,8 @@ Dygraph.Interaction.movePan = function(event, g, context) {
  *     dragStartX/dragStartY/etc. properties). This function modifies the
  *     context.
  */
-Dygraph.Interaction.endPan = function(event, g, context) {
+Dygraph.Interaction.endPan = function (event, g, context) {
+  g.disableInteractivePointSelection = false;
   context.dragEndX = Dygraph.dragGetX_(event, context);
   context.dragEndY = Dygraph.dragGetY_(event, context);
 
