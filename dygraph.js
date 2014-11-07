@@ -2122,17 +2122,10 @@ Dygraph.prototype.updateSelection_ = function(opt_animFraction) {
     // Redraw only the highlighted series in the interactive canvas (not the
     // static plot canvas, which is where series are usually drawn).
     this.plotter_._renderLineChart(this.highlightSet_, ctx);
-  } else if (this.previousVerticalX_ >= 0) {
-    // Determine the maximum highlight circle size.
-    var maxCircleSize = 0;
-    var labels = this.attr_('labels');
-    for (i = 1; i < labels.length; i++) {
-      var r = this.getNumericOption('highlightCircleSize', labels[i]);
-      if (r > maxCircleSize) maxCircleSize = r;
-    }
-    var px = this.previousVerticalX_;
-    ctx.clearRect(px - maxCircleSize - 1, 0,
-                  2 * maxCircleSize + 2, this.height_);
+  }
+  else if (this.previousVerticalX_ >= 0) {
+    // clear the interactive canvas as all the selected points will be redrawn
+    this.canvas_ctx_.clearRect(0, 0, this.width_, this.height_);
   }
 
   if (this.isUsingExcanvas_ && this.currentZoomRectArgs_) {
