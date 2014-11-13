@@ -64,7 +64,7 @@ Dygraph.Interaction.startPan = function(event, g, context) {
     for (i = 0; i < g.axes_.length; i++) {
       axis = g.axes_[i];
       var isYLog = g.attributes_.getForAxis("logscale", i);
-      var yExtremes = axis.valueRange;
+      var yExtremes = axis.valueRange || axis.extremeRange;
   
       var boundedLowY = g.toDomYCoord(yExtremes[0], i) + maxYPixelsToDraw;
       var boundedHighY = g.toDomYCoord(yExtremes[1], i) - maxYPixelsToDraw;
