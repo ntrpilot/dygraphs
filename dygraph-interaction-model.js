@@ -60,7 +60,8 @@ Dygraph.Interaction.startPan = function(event, g, context) {
 
     var boundedValues = [];
     var maxYPixelsToDraw = g.height_ * panEdgeFraction;
-  
+
+    context.axes = [];
     for (i = 0; i < g.axes_.length; i++) {
       axis = g.axes_[i];
       var isYLog = g.attributes_.getForAxis("logscale", i);
@@ -73,27 +74,11 @@ Dygraph.Interaction.startPan = function(event, g, context) {
       var boundedHighValue = g.toDataYCoord(boundedHighY, i);
   
       boundedValues[i] = [boundedLowValue, boundedHighValue];
+
+      context.is2DPan = context.is2DPan || yExtremes[0] > boundedLowValue || yExtremes[1] < boundedHighValue;
+      context.axes.push({initialHighValue: axis.computedValueRange && axis.computedValueRange[1] });
     }
     context.boundedValues = boundedValues;
-  }
-
-  // Record the range of each y-axis at the start of the drag.
-  // If any axis has a valueRange or valueWindow, then we want a 2D pan.
-  // We can't store data directly in g.axes_, because it does not belong to us
-  // and could change out from under us during a pan (say if there's a data
-  // update).
-  context.is2DPan = false;
-  context.axes = [];
-  for (i = 0; i < g.axes_.length; i++) {
-    axis = g.axes_[i];
-    var axis_data = {};
-    var yRange = g.yAxisRange(i);
-    // TODO(konigsberg): These values should be in |context|.
-    axis_data.initialHighValue = yRange[1];
-    context.axes.push(axis_data);
- 
-    // While calculating axes, set 2dpan.
-    if (axis.valueWindow || axis.valueRange) context.is2DPan = true;
   }
 };
 
