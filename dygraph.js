@@ -3585,8 +3585,10 @@ Dygraph.prototype.resize = function(width, height) {
     this.width_ = width;
     this.height_ = height;
   } else {
-    this.width_ = this.maindiv_.clientWidth;
-    this.height_ = this.maindiv_.clientHeight;
+    this.maindiv_.style.height = '';
+    this.maindiv_.style.width = '';
+    this.width_ = this.maindiv_.clientWidth > 0 ? this.maindiv_.clientWidth : old_width;
+    this.height_ = this.maindiv_.clientHeight > 0 ? this.maindiv_.clientHeight : old_height;
   }
 
   if (old_width != this.width_ || old_height != this.height_) {
