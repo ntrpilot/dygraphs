@@ -130,7 +130,13 @@ handler.prototype.seriesToPoints = function(series, setName, boundaryIdStart) {
       xval : handler.parseFloat(item[0]),
       yval : yval,
       name : setName, // TODO(danvk): is this really necessary?
-      idx : i + boundaryIdStart
+      idx : i + boundaryIdStart,
+      // added for the purposes of web platfrom: start
+      canvasx: NaN,
+      canvasy: NaN,
+      canvasxRange: [],
+      canvasyRange: []
+      // added for the purposes of web platfrom: finish
     };
     points.push(point);
   }
