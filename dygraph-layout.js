@@ -339,10 +339,7 @@ DygraphLayout.prototype._evaluateAnnotations = function() {
  * Convenience function to remove all the data sets from a graph
  */
 DygraphLayout.prototype.removeAllDatasets = function() {
-  delete this.points;
-  delete this.setNames;
-  delete this.setPointsLengths;
-  delete this.setPointsOffsets;
+  // added for the purposes of web platfrom: removed
   this.points = [];
   this.setNames = [];
   this.setPointsLengths = [];

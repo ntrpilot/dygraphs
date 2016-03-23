@@ -362,13 +362,15 @@ DygraphCanvasRenderer._drawSeries = function(e,
  */
 DygraphCanvasRenderer._drawPointsOnLine = function(
     e, pointsOnLine, drawPointCallback, color, pointSize) {
+  // added for the purposes of web platfrom: start
   var ctx = e.drawingContext;
-  for (var idx = 0; idx < pointsOnLine.length; idx++) {
-    var point = pointsOnLine[idx];
-    ctx.save();
-    drawPointCallback(e.dygraph, e.setName, ctx, point, color, pointSize);
-    ctx.restore();
+  ctx.save();
+  for (var idx = pointsOnLine.length - 1; idx !== -1; --idx) {
+    drawPointCallback(e.dygraph, e.setName, ctx, pointsOnLine[idx], color, pointSize);
   }
+  ctx.stroke();
+  ctx.restore();
+  // added for the purposes of web platfrom: end
 };
 
 /**
@@ -392,13 +394,40 @@ DygraphCanvasRenderer.prototype._updatePoints = function() {
   for (var i = sets.length; i--;) {
     var points = sets[i];
     for (var j = points.length; j--;) {
-      var point = points[j];
-      var area = this.area;
+        var point = points[j];
+        var area = this.area;
 
-      point.canvasx = area.w * point.x + area.x;
-      point.canvasy = area.h * point.y + area.y;
-      point.canvasxRange = point.xRange.map(function(val) { return area.w * val + area.x; });
-      point.canvasyRange = point.yRange.map(function(val) { return area.h * val + area.y; });
+        point.canvasx = area.w * point.x + area.x;
+        point.canvasy = area.h * point.y + area.y;
+        // added for the purposes of web platfrom: start
+        switch(point.xRange.length) {
+            case 1:
+                point.canvasxRange[0] = area.w * point.xRange[0] + area.x;
+                break;
+
+            case 2:
+                point.canvasxRange[0] = area.w * point.xRange[0] + area.x;
+                point.canvasxRange[1] = area.w * point.xRange[1] + area.x;
+                break;
+
+            default:
+                point.canvasxRange = point.xRange.map(function(val) { return area.w * val + area.x; });
+        }
+
+        switch(point.yRange.length) {
+            case 1:
+                point.canvasyRange[0] = area.h * point.yRange[0] + area.y;
+                break;
+
+            case 2:
+                point.canvasyRange[0] = area.h * point.yRange[0] + area.y;
+                point.canvasyRange[1] = area.h * point.yRange[1] + area.y;
+                break;
+
+            default:
+                point.canvasyRange = point.yRange.map(function(val) { return area.h * val + area.y; });
+        }
+        // added for the purposes of web platfrom: end
     }
   }
 };
@@ -689,7 +718,7 @@ DygraphCanvasRenderer._fillPlotter = function(e) {
   for (var setIdx = setCount - 1; setIdx >= 0; setIdx--) {
     var setName = setNames[setIdx];
     if (!g.getBooleanOption('fillGraph', setName)) continue;
-    
+
     var stepPlot = g.getBooleanOption('stepPlot', setName);
     var color = colors[setIdx];
     var axis = g.axisPropertiesForSeries(setName);
@@ -765,7 +794,7 @@ DygraphCanvasRenderer._fillPlotter = function(e) {
       }
       if (!isNaN(prevX)) {
         ctx.moveTo(prevX, prevYs[0]);
-        
+
         // Move to top fill point
         if (stepPlot) {
           ctx.lineTo(point.canvasx, prevYs[0]);
