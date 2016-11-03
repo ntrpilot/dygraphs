@@ -2007,7 +2007,7 @@ Dygraph.prototype.mouseMove_ = function(event) {
       ? this.findStackedPoint(canvasx, canvasy)
       : this.findClosestPoint(canvasx, canvasy);
 
-  var selectionChanged = this.setSelection(closest.row, closest.seriesName);
+  var selectionChanged = this.setSelection(closest.row, closest.seriesName, undefined, closest.point);
 
   var callback = this.getFunctionOption("highlightCallback");
   if (callback && selectionChanged) {
@@ -2085,28 +2085,23 @@ Dygraph.prototype.updateSelection_ = function(opt_animFraction) {
   var i;
   var ctx = this.canvas_ctx_;
   if (this.getOption('highlightSeriesOpts')) {
-    ctx.clearRect(0, 0, this.width_, this.height_);
-    var alpha = 1.0 - this.getNumericOption('highlightSeriesBackgroundAlpha');
-    if (alpha) {
-      // Activating background fade includes an animation effect for a gradual
-      // fade. TODO(klausw): make this independently configurable if it causes
-      // issues? Use a shared preference to control animations?
-      var animateBackgroundFade = true;
-      if (animateBackgroundFade) {
-        if (opt_animFraction === undefined) {
-          // start a new animation
-          this.animateSelection_(1);
-          return;
-        }
-        alpha *= opt_animFraction;
-      }
-      ctx.fillStyle = 'rgba(255,255,255,' + alpha + ')';
-      ctx.fillRect(0, 0, this.width_, this.height_);
-    }
+    
+        if (this.highlightSet_ === this.prevHighlightSet && this.prevCanvasCtx != null) {
+            ctx.putImageData(this.prevCanvasCtx, 0, 0);
+        } else {
+            ctx.clearRect(0, 0, this.width_, this.height_);
+            var alpha = 1.0 - this.getNumericOption('highlightSeriesBackgroundAlpha');
+            if (alpha) {
+                ctx.fillStyle = 'rgba(255,255,255,' + alpha + ')';
+                ctx.fillRect(0, 0, this.width_, this.height_);
+            }
 
-    // Redraw only the highlighted series in the interactive canvas (not the
-    // static plot canvas, which is where series are usually drawn).
-    this.plotter_._renderLineChart(this.highlightSet_, ctx);
+            // Redraw only the highlighted series in the interactive canvas (not the
+            // static plot canvas, which is where series are usually drawn).
+            this.plotter_._renderLineChart(this.highlightSet_, ctx);
+            this.prevCanvasCtx = ctx.getImageData(0, 0, this.width_, this.height_);
+            this.prevHighlightSet = this.highlightSet_;
+        }
   }
   else if (this.previousVerticalX_ >= 0) {
     // clear the interactive canvas as all the selected points will be redrawn
@@ -2121,21 +2116,27 @@ Dygraph.prototype.updateSelection_ = function(opt_animFraction) {
     // Draw colored circles over the center of each selected point
     var canvasx = this.selPoints_[0].canvasx;
     ctx.save();
-    for (i = 0; i < this.selPoints_.length; i++) {
-      var pt = this.selPoints_[i];
-      if (!Dygraph.isOK(pt.canvasy)) continue;
+    ctx.beginPath();
+    var x = this.selPoints_.length;
+    var callback = this.getFunctionOption("drawHighlightPointCallback") || Dygraph.Circles.DEFAULT;
 
-      var circleSize = this.getNumericOption('highlightCircleSize', pt.name);
-      var callback = this.getFunctionOption("drawHighlightPointCallback", pt.name);
-      var color = this.plotter_.colors[pt.name];
-      if (!callback) {
-        callback = Dygraph.Circles.DEFAULT;
-      }
-      ctx.lineWidth = this.getNumericOption('strokeWidth', pt.name);
-      ctx.strokeStyle = color;
-      ctx.fillStyle = color;
-      callback(this, pt.name, ctx, pt, color, circleSize);
+    while (--x >= 0) {
+        var pt = this.selPoints_[x];
+
+        if (!Dygraph.isOK(pt.canvasy)) continue;
+
+        var circleSize = this.getNumericOption('highlightCircleSize', pt.name);
+        var color = this.plotter_.colors[pt.name];
+
+        ctx.lineWidth = this.getNumericOption('strokeWidth', pt.name);
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+        callback(this, pt.name, ctx, pt, color, circleSize);
+
+        ctx.fill();
+        ctx.stroke();
     }
+    ctx.closePath();
     ctx.restore();
 
     this.previousVerticalX_ = canvasx;
@@ -2153,8 +2154,11 @@ Dygraph.prototype.updateSelection_ = function(opt_animFraction) {
  * @param { locked } optional If true, keep seriesName selected when mousing
  * over the graph, disabling closest-series highlighting. Call clearSelection()
  * to unlock it.
+ * 
+ * ADDED: the closest point is for the line chart - this will prevent all of the points
+ * that are not means to be highlight from being highlight
  */
-Dygraph.prototype.setSelection = function(row, opt_seriesName, opt_locked) {
+Dygraph.prototype.setSelection = function(row, opt_seriesName, opt_locked, closestPoint) {
   // Extract the points we've selected
   this.selPoints_ = [];
 
@@ -2162,13 +2166,17 @@ Dygraph.prototype.setSelection = function(row, opt_seriesName, opt_locked) {
   if (row !== false && row >= 0) {
     if (row != this.lastRow_) changed = true;
     this.lastRow_ = row;
-    for (var setIdx = 0; setIdx < this.layout_.points.length; ++setIdx) {
-      var points = this.layout_.points[setIdx];
-      var setRow = row - this.getLeftBoundary_(setIdx);
-      if (setRow < points.length) {
-        var point = points[setRow];
-        if (point.yval !== null) this.selPoints_.push(point);
+    if (closestPoint === undefined) {
+      for (var setIdx = 0; setIdx < this.layout_.points.length; ++setIdx) {
+        var points = this.layout_.points[setIdx];
+        var setRow = row - this.getLeftBoundary_(setIdx);
+        if (setRow < points.length) {
+          var point = points[setRow];
+          if (point.yval !== null) this.selPoints_.push(point);
+        }
       }
+    } else {
+      this.selPoints_ = [closestPoint];
     }
   } else {
     if (this.lastRow_ >= 0) changed = true;
@@ -2629,6 +2637,12 @@ Dygraph.prototype.gatherDatasets_ = function(rolledSeries, dateWindow) {
  */
 Dygraph.prototype.drawGraph_ = function() {
   var start = new Date();
+
+  // This is used in web platform to make rendering the highlighted series faster
+  // The canvas image state is stored for a highlighted series so that the image can be restored
+  // as apposed to redrawing the line and all it's points every time
+  this.prevCanvasCtx = null;
+  this.prevHighlightSet = null;
 
   // This is used to set the second parameter to drawCallback, below.
   var is_initial_draw = this.is_initial_draw_;
