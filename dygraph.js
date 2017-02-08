@@ -2003,9 +2003,16 @@ Dygraph.prototype.mouseMove_ = function(event) {
   var canvasx = canvasCoords[0];
   var canvasy = canvasCoords[1];
 
-  var closest = this.getBooleanOption("stackedGraph")
-      ? this.findStackedPoint(canvasx, canvasy)
-      : this.findClosestPoint(canvasx, canvasy);
+  var findClosestCallback = this.getFunctionOption("findClosestPointCallback");
+  var closest = null;
+
+  if (findClosestCallback) {
+    closest = findClosestCallback(canvasx, canvasy, this.layout_.points, this.attrs_.pointSize);
+  } else {
+    closest = this.getBooleanOption("stackedGraph")
+        ? this.findStackedPoint(canvasx, canvasy)
+        : this.findClosestPoint(canvasx, canvasy);
+  }
 
   var selectionChanged = this.setSelection(closest.row, closest.seriesName, undefined, closest.point);
 
